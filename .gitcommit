@@ -1,0 +1,508 @@
+# Git Commit 规范
+
+本项目遵循 Conventional Commits 提交规范，确保提交信息清晰、一致且易于追踪。
+
+## 提交格式
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+## 类型 (type)
+
+必须使用以下类型之一：
+
+| 类型 | 说明 | 示例 |
+|-----|------|------|
+| `feat` | 新功能 | feat(agents): 添加政策咨询RAG智能体 |
+| `fix` | 修复bug | fix(db): 修复PostgreSQL连接超时问题 |
+| `docs` | 文档更新 | docs(readme): 添加部署说明 |
+| `style` | 代码格式调整（不影响功能） | style(frontend): 统一代码缩进格式 |
+| `refactor` | 重构（既不是新功能也不是修复bug） | refactor(api): 优化DAO层数据访问逻辑 |
+| `perf` | 性能优化 | perf(chroma): 优化向量检索性能 |
+| `test` | 测试相关 | test(agents): 添加编排器单元测试 |
+| `chore` | 构建/工具链相关 | chore(deps): 更新requirements.txt依赖 |
+| `ci` | CI/CD相关 | ci(github): 添加自动化测试流水线 |
+
+## 范围 (scope)
+
+根据项目模块选择合适的范围：
+
+- `agents` - 多智能体相关（Orchestrator、RAG Agent、Memory Agent、Tool Agent）
+- `api` - FastAPI接口层（DAO、Service、API路由）
+- `db` - 数据库相关（PostgreSQL表结构、数据导入、Neo4j图操作）
+- `utils` - 工具函数（RAG处理、MCP客户端）
+- `frontend` - Next.js前端（页面组件、样式、API调用）
+- `deploy` - 部署配置（Vercel、GitHub Actions）
+- `docs` - 项目文档
+
+## 主题 (subject)
+
+- 使用简洁的中文描述
+- 不要超过50个字符
+- 结尾不加句号
+- 使用祈使语气（"添加"、"修复"、"更新"等）
+
+## 正文 (body) - 可选
+
+详细描述本次提交的内容，包括：
+
+- **做了什么**：修改的详细说明
+- **为什么**：修改的原因和背景
+- **如何影响**：对现有功能的影响
+
+格式：
+- 每行不超过72个字符
+- 使用中文描述
+
+## 页脚 (footer) - 可选
+
+用于关闭 Issue 或标记破坏性变更：
+
+- 关闭 Issue：`Closes #123` 或 `Fixes #456`
+- 破坏性变更：`BREAKING CHANGE: 详细说明`
+
+## 示例
+
+### 基础示例
+
+```
+feat(agents): 添加政策咨询RAG智能体
+```
+
+```
+fix(db): 修复PostgreSQL连接超时问题
+```
+
+```
+docs(readme): 更新部署文档
+```
+
+### 完整示例
+
+```
+feat(agents): 添加政策咨询RAG智能体
+
+实现RAG Agent对接Chroma向量库，完成校园政策和报到手册的语义检索：
+- 添加文档加载和语义切分功能
+- 集成BGE-m3 embedding模型
+- 实现混合检索（语义+关键词）
+- 与编排器完成对接测试
+
+Closes #42
+```
+
+```
+fix(api): 修复学生宿舍查询返回空结果问题
+
+问题原因：dormitory表的student_id外键约束导致查询失败
+解决方案：调整SQL查询逻辑，使用LEFT JOIN替代内连接
+影响范围：/api/student/{id}/dormitory接口
+```
+
+```
+refactor(db): 优化PostgreSQL查询性能
+
+为以下表添加索引以提升查询速度：
+- student_records表：添加(department, grade)联合索引
+- payments表：添加(student_id, payment_type)联合索引
+- dormitory表：添加(building, floor)联合索引
+
+性能提升：平均查询时间从500ms降至80ms
+
+Closes #67
+```
+
+```
+ci(github): 添加自动化测试流水线
+
+配置GitHub Actions工作流：
+- 代码检查：使用flake8和black
+- 单元测试：pytest运行所有测试
+- 构建验证：Next.js前端构建
+- 自动部署：成功后部署到Vercel预览环境
+
+BREAKING CHANGE: 分支保护规则已更新，所有PR必须通过CI检查
+```
+
+## 常见错误 ❌
+
+### 错误示例1：缺少类型
+
+```
+添加新的智能体功能
+```
+
+✅ 正确：
+```
+feat(agents): 添加新的智能体功能
+```
+
+### 错误示例2：主题过长
+
+```
+feat(agents): 添加一个用于处理政策咨询的基于RAG技术的智能体，可以检索Chroma向量库中的校园政策文档
+```
+
+✅ 正确：
+```
+feat(agents): 添加政策咨询RAG智能体
+```
+
+### 错误示例3：使用英文
+
+```
+feat(agents): add RAG agent for policy consultation
+```
+
+✅ 正确：
+```
+feat(agents): 添加政策咨询RAG智能体
+```
+
+### 错误示例4：主题末尾有标点
+
+```
+feat(agents): 添加政策咨询RAG智能体。
+```
+
+✅ 正确：
+```
+feat(agents): 添加政策咨询RAG智能体
+```
+
+### 错误示例5：一次提交包含多个不相关的修改
+
+```
+feat: 添加智能体功能并修复bug和更新文档
+```
+
+✅ 正确：拆分为多个提交
+```
+feat(agents): 添加政策咨询RAG智能体
+fix(db): 修复PostgreSQL连接问题
+docs(readme): 更新部署说明
+```
+
+## Git 提交命令
+
+### 提交步骤
+
+```bash
+# 1. 查看修改内容
+git status
+
+# 2. 添加修改的文件
+git add .
+# 或指定文件
+git add agents/orchestrator.py
+
+# 3. 提交（遵循规范）
+git commit -m "feat(agents): 添加政策咨询RAG智能体"
+
+# 4. 推送到远程仓库
+git push origin feature/day1
+```
+
+### 提交前检查
+
+提交前请确认：
+
+1. ✅ 提交类型正确（feat/fix/docs等）
+2. ✅ 范围明确（agents/api/db等）
+3. ✅ 主题简洁明了，不超过50字符
+4. ✅ 使用中文描述
+5. ✅ 一次提交只包含一个主要变更
+6. ✅ 相关Issue已关闭（如有需要）
+7. ✅ 代码已通过本地测试
+
+### 修改最后一次提交
+
+```bash
+# 修改提交信息（不包含新文件）
+git commit --amend
+
+# 修改提交信息并添加新文件
+git add <新文件>
+git commit --amend --no-edit  # 不修改提交信息，只添加文件
+
+# 修改最后一次提交并推送到远程
+git commit --amend
+git push origin <branch> --force
+```
+
+## Commitlint 配置（可选）
+
+如需自动化检查提交规范，可以配置 Commitlint：
+
+### 安装依赖
+
+```bash
+npm install -g @commitlint/cli @commitlint/config-conventional
+```
+
+### 创建配置文件 `.commitlintrc.js`
+
+```javascript
+module.exports = {
+  extends: ['@commitlint/config-conventional'],
+  rules: {
+    'type-enum': [2, 'always', [
+      'feat', 'fix', 'docs', 'style', 'refactor', 'perf', 'test', 'chore', 'ci'
+    ]],
+    'type-case': [2, 'always', 'lower-case'],
+    'type-empty': [2, 'never'],
+    'scope-case': [2, 'always', 'lower-case'],
+    'subject-empty': [2, 'never'],
+    'subject-full-stop': [2, 'never', '.'],
+    'subject-max-length': [2, 'always', 50],
+  },
+};
+```
+
+## 与 GitHub 集成
+
+### 关闭 Issue
+
+在提交信息中引用 Issue，提交后自动关闭：
+
+```bash
+# 方式1
+git commit -m "feat(api): 添加学生档案查询接口\n\nCloses #123"
+
+# 方式2
+git commit -m "fix(db): 修复宿舍查询bug\n\nFixes #456"
+
+# 方式3（多个Issue）
+git commit -m "refactor(agents): 优化智能体调度逻辑\n\nCloses #78, #79, #80"
+```
+
+### Pull Request 标题
+
+PR 标题也应遵循相同的规范，使用提交信息的主题部分：
+
+```
+feat(agents): 添加政策咨询RAG智能体
+```
+
+## 项目特定场景示例
+
+### Day 1: 项目初始化
+
+```bash
+feat(project): 初始化项目目录结构
+
+创建标准项目结构：
+- api/：FastAPI接口层
+- agents/：多智能体实现
+- db/：数据库工具
+- utils/：工具函数
+- 配置.gitignore和requirements.txt
+```
+
+### Day 2: RAG 向量库
+
+```bash
+feat(rag): 完成Chroma向量库构建
+
+实现基于BGE-m3的文档向量化：
+- PDF文档加载和语义切分
+- Chroma本地向量库存储
+- 实现语义检索和混合检索
+
+Closes #5
+```
+
+```bash
+fix(rag): 优化文本切分参数
+
+调整chunk_size从500调整为400，减少语义断裂
+检索准确率从75%提升至82%
+```
+
+### Day 3: Neo4j 知识图谱
+
+```bash
+feat(neo4j): 搭建校园知识图谱
+
+创建核心实体和关系：
+- 学生、教师、实验室、课程、院系节点
+- 选修、授课、入驻、隶属关系
+- 导入仿真数据并验证可视化
+```
+
+```bash
+fix(neo4j): 修复多跳查询死循环问题
+
+添加Cypher语句过滤：
+- 禁止DELETE/DROP操作
+- 设置查询超时时间（30秒）
+- 添加最大返回结果限制（100条）
+```
+
+### Day 4: PostgreSQL 业务表
+
+```bash
+feat(db): 设计并创建业务表结构
+
+创建三张核心业务表：
+- student_records：学籍信息
+- payments：财务记录
+- dormitory：宿舍分配
+添加主键、外键和索引约束
+```
+
+```bash
+feat(api): 实现学生档案查询接口
+
+分层开发完成：
+- DAO层：数据访问对象
+- Service层：业务逻辑处理
+- API层：FastAPI路由
+通过Swagger UI测试验证
+```
+
+### Day 5: LangGraph 状态持久化
+
+```bash
+feat(langgraph): 实现PostgresSaver状态持久化
+
+配置LangGraph Checkpointer：
+- 集成PostgresSaver存储状态
+- 设计Thread ID会话标识
+- 实现断点续传功能
+
+Closes #12
+```
+
+```bash
+fix(langgraph): 修复状态恢复逻辑
+
+问题：刷新页面后状态丢失
+解决：修正Thread ID传递机制
+测试：5次断点续传均成功
+```
+
+### Day 6: Orchestrator 编排器
+
+```bash
+feat(agents): 开发编排器意图识别
+
+实现动态路由逻辑：
+- 基于LLM的意图分类（5类意图）
+- 规则引擎兜底机制
+- 条件边实现智能体调度
+
+Closes #18
+```
+
+### Day 7: 专业智能体
+
+```bash
+feat(agents): 实现RAG和Memory智能体
+
+RAG Agent：
+- 对接Chroma向量库
+- 语义检索和答案生成
+
+Memory Agent：
+- 对接PostgreSQL业务表
+- 学生信息查询和记忆
+- 支持多轮对话复用
+```
+
+### Day 8: MCP 协议集成
+
+```bash
+feat(mcp): 实现极简MCP Server/Client
+
+MCP Server（FastAPI）：
+- 封装校园室内导航数据
+- 提供标准化工具接口
+
+MCP Client：
+- 集成地图API（高德/百度）
+- Tool Agent完成导航功能
+
+Closes #25
+```
+
+### Day 9: 前端与SSE
+
+```bash
+feat(frontend): 实现Next.js前端界面
+
+基于Next.js+Tailwind CSS模板：
+- AI对话界面
+- Agent思考链实时展示
+- SSE流式打字效果
+
+Closes #30
+```
+
+```bash
+fix(frontend): 修复SSE流式传输断连问题
+
+优化EventSource连接管理：
+- 添加自动重连机制
+- 实现超时处理
+- 优化错误提示
+```
+
+### Day 10: CICD 部署
+
+```bash
+ci(github): 配置自动化CI/CD流水线
+
+实现完整工作流：
+- 代码检查（flake8/black）
+- 单元测试（pytest）
+- 前端构建（npm run build）
+- Vercel自动部署
+
+BREAKING CHANGE: 启用分支保护，PR必须通过CI
+```
+
+```bash
+chore(deploy): 配置Vercel生产环境
+
+Vercel环境配置：
+- 关联GitHub仓库
+- 配置环境变量
+- 设置预览和生产环境
+- 启用自动域名
+```
+
+## 工具推荐
+
+### VS Code 插件
+
+1. **Commitizen**：交互式提交信息生成
+2. **Conventional Commits**：提交信息自动补全和验证
+3. **GitLens**：Git 历史可视化
+
+### 命令行工具
+
+```bash
+# 安装 commitizen（交互式提交）
+npm install -g commitizen cz-conventional-changelog
+
+# 使用 commitizen 提交
+git cz  # 替代 git commit
+```
+
+## 总结
+
+遵循 Git Commit 规范的好处：
+
+✅ **清晰的版本历史**：快速了解每次提交的目的
+✅ **自动化生成日志**：可自动生成 CHANGELOG
+✅ **团队协作效率**：统一的提交格式便于代码审查
+✅ **问题追踪**：直接关联 Issue 和提交
+✅ **语义化版本**：支持自动版本号管理
+
+**记住：** 好的提交信息是项目的活文档！
