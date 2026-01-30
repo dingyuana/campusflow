@@ -12,7 +12,7 @@ langchain==0.3.13
 langchain-core==0.3.28
 langchain-community==0.3.13
 langgraph==0.2.60
-langchain-checkpoint-postgres==0.0.4
+langgraph-checkpoint-postgres>=2.0.0
 langchain-openai==0.2.14
 
 # 向量库
@@ -25,4 +25,4 @@ pydantic==2.10.4
 
 # 文档处理
 pypdf==5.1.0
-unstructured==0.16.12
+unstructured==0.18.31

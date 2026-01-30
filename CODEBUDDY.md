@@ -99,8 +99,8 @@ campusflow/
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 
-# 安装依赖
-pip install -r requirements.txt
+# 安装依赖（国内镜像加速）
+uv pip install -r requirements.txt --index-url https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
 ### 数据库操作

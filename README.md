@@ -76,7 +76,11 @@ source venv/bin/activate
 ### 3. 安装依赖
 
 ```bash
-pip install -r requirements.txt
+# 国内用户使用清华镜像加速
+uv pip install -r requirements.txt --index-url https://pypi.tuna.tsinghua.edu.cn/simple
+
+# 或使用阿里云镜像
+uv pip install -r requirements.txt --index-url https://mirrors.aliyun.com/pypi/simple/
 ```
 
 ### 4. 配置环境变量
