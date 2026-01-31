@@ -129,6 +129,7 @@ python app.py
 - `main`: 生产分支
 - `dev`: 开发分支
 - `feature/dayX`: 每日特性分支
+- `feature/campusflow-v2`: 完整重构分支（当前）
 
 ### Commit 规范
 
