@@ -181,7 +181,12 @@ with gr.Blocks(title="🎓 智慧校园助手") as demo:
     def handle_message(message, history):
         """处理用户消息"""
         response, updated_history = assistant.process_message(message, history)
-        return updated_history, "", assistant.get_stats()
+        # 转换为 OpenAI 格式（Gradio 新版本要求）
+        messages = []
+        for user_msg, assistant_msg in updated_history:
+            messages.append({"role": "user", "content": user_msg})
+            messages.append({"role": "assistant", "content": assistant_msg})
+        return messages, "", assistant.get_stats()
 
     def handle_example(example):
         """处理示例问题"""
@@ -189,6 +194,7 @@ with gr.Blocks(title="🎓 智慧校园助手") as demo:
 
     def handle_clear():
         """清空历史"""
+        assistant.clear_history()
         return [], "", assistant.get_stats()
 
     def handle_enrollment():
