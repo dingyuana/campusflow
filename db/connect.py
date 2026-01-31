@@ -21,14 +21,18 @@ def connect_supabase():
     3. 测试数据查询
     """
     try:
-        # 1. 创建 Supabase 客户端
-        supabase = create_client(
-            os.getenv("SUPABASE_URL"),
-            os.getenv("SUPABASE_KEY")
-        )
+        # 1. 获取环境变量
+        supabase_url = os.getenv("SUPABASE_URL")
+        supabase_key = os.getenv("SUPABASE_KEY")
+        
+        if not supabase_url or not supabase_key:
+            raise ValueError("❌ 环境变量 SUPABASE_URL 或 SUPABASE_KEY 未设置")
+        
+        # 2. 创建 Supabase 客户端
+        supabase = create_client(supabase_url, supabase_key)
         print("✅ Supabase 客户端创建成功！")
         
-        # 2. 测试查询（假设已创建 test 表）
+        # 3. 测试查询（假设已创建 test 表）
         try:
             response = supabase.table('test').select("*").limit(5).execute()
             print(f"📊 查询成功，返回 {len(response.data)} 条数据")

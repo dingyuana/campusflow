@@ -12,6 +12,7 @@ langchain==0.3.13
 langchain-core==0.3.28
 langchain-community==0.3.13
 langgraph==0.2.60
+langgraph-supervisor>=0.0.1
 langchain-checkpoint-postgres>=2.0.0
 langchain-openai==0.2.14
 
@@ -20,7 +21,9 @@ chromadb==0.5.23
 sentence-transformers==3.3.1
 
 # 网络搜索
-duckduckgo-search
+tavily-python==0.5.0
+duckduckgo-search>=6.0.0
+dashscope>=1.20.0
 
 # Gradio
 gradio==6.5.1
@@ -28,10 +31,26 @@ gradio==6.5.1
 # 工具
 python-dotenv==1.0.1
 pydantic==2.10.4
+pydantic-settings>=2.0.0
 
 # 文档处理
 pypdf==5.1.0
 unstructured==0.18.31
+python-docx>=0.8.11
+openpyxl>=3.0.10
 
-# 其他
+# 安全与隐私
+presidio-analyzer>=2.2.0
+presidio-anonymizer>=2.2.0
+
+# 测试
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+
+# 其他工具
+httpx>=0.25.0
+requests>=2.31.0
+pandas>=2.0.0
+numpy>=1.24.0
+pillow>=10.0.0
 tiktoken>=0.5.0
