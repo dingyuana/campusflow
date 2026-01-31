@@ -13,7 +13,7 @@
 - 🕸️ 知识图谱：复杂关系查询（Neo4j）
 - 💾 状态持久化：断点续传、多端同步
 - 🧭 校园导航：室内+室外路径规划
-- 🌐 全栈交付：Next.js + FastAPI + Vercel
+- 🌐 全栈交付：Gradio + FastAPI + Spaces
 
 ## 🏗️ 技术栈
 
@@ -24,8 +24,8 @@
 | 向量库 | Chroma DB |
 | 知识图谱 | Neo4j |
 | 后端框架 | FastAPI |
-| 前端框架 | Next.js + Tailwind CSS |
-| 部署平台 | Vercel |
+| 前端框架 | Gradio |
+| 部署平台 | Hugging Face Spaces |
 | CI/CD | GitHub Actions |
 
 ## 📁 项目结构
@@ -35,21 +35,43 @@ CampusFlow/
 ├── api/                    # FastAPI 后端接口
 │   ├── dao/               # 数据访问层
 │   ├── services/          # 业务逻辑层
-│   └── main.py            # 接口入口
+│   ├── student_routes.py    # 学生 API 路由
+│   └── main.py            # FastAPI 主入口
 ├── agents/                 # LangGraph 智能体
-│   ├── langgraph_basic.py
-│   └── langgraph_checkpoint.py
+│   ├── state_graph_basic.py     # Day 5: 状态图
+│   ├── memory_manager.py        # Day 6: 记忆管理
+│   ├── middleware.py            # Day 6: 中间件
+│   ├── supervisor_agent.py       # Day 7: 监督者模式
+│   └── web_search.py           # Day 8: 网络搜索
 ├── db/                     # 数据库相关
-│   ├── connect.py
-│   ├── models.py
-│   ├── seed_data.py
-│   └── neo4j_utils.py
+│   ├── connect.py               # Supabase 连接
+│   ├── database_schema.sql        # 数据库表结构
+│   ├── neo4j_utils.py          # Neo4j 工具类
+│   └── neo4j_test_basic.py    # Neo4j 测试
 ├── utils/                  # 工具函数
-│   └── rag_utils.py
-├── data/                   # 数据文件
+│   ├── rag_utils.py            # RAG 工具类
+│   ├── rag_test_basic.py         # RAG 基础测试
+│   ├── rag_test_simple.py        # RAG 简单测试
+│   ├── test_rag_documents.py   # RAG 文档测试
+│   └── build_rag_from_docs.py # RAG 构建脚本
+├── docs/                   # 文档目录
+│   ├── 教学文件/            # 教学相关文档和测试材料
+│   │   ├── ragfiles/             # RAG 测试文档
+│   │   └── neo4j知识图谱.md
+│   ├── 测试报告/             # 各阶段的测试报告
+│   ├── 知识点补充/          # 补充知识点和学习指南
+│   ├── 教学大纲.md          # 教学大纲
+│   ├── 教学大纲升级版.md    # 教学大纲（升级版）
+│   ├── 教学计划.md          # 教学计划
+│   ├── 教学计划升级版.md    # 教学计划（升级版）
+│   ├── 实训基本纲要.md      # 实训基本纲要
+│   └── README.md
+├── app.py                   # Gradio 前端应用
+├── requirements.txt          # Python 依赖
 ├── .env.example            # 环境变量示例
-├── requirements.txt        # Python 依赖
-└── README.md
+├── README.md                # 项目说明文档
+├── AGENTS.md               # AI 助手指南
+└── CODEBUDDY.md             # 项目开发指南
 ```
 
 ## 🚀 快速开始
@@ -64,23 +86,23 @@ cd CampusFlow
 ### 2. 创建虚拟环境
 
 ```bash
-python -m venv venv
+python -m venv .venv
 
 # Windows
-venv\Scripts\activate
+.venv\Scripts\activate
 
 # Mac/Linux
-source venv/bin/activate
+source .venv/bin/activate
 ```
 
 ### 3. 安装依赖
 
 ```bash
 # 国内用户使用清华镜像加速
-uv pip install -r requirements.txt --index-url https://pypi.tuna.tsinghua.edu.cn/simple
+pip install -r requirements.txt --index-url https://pypi.tuna.tsinghua.edu.cn/simple
 
 # 或使用阿里云镜像
-uv pip install -r requirements.txt --index-url https://mirrors.aliyun.com/pypi/simple/
+pip install -r requirements.txt --index-url https://mirrors.aliyun.com/pypi/simple/
 ```
 
 ### 4. 配置环境变量
@@ -90,11 +112,14 @@ cp .env.example .env
 # 编辑 .env 文件，填入你的数据库连接信息
 ```
 
-### 5. 运行测试
+### 5. 启动服务
 
 ```bash
-# 测试数据库连接
-python db/connect.py
+# 启动后端 API
+uvicorn api.main:app --reload
+
+# 启动前端应用
+python app.py
 ```
 
 ## 📝 开发规范
@@ -115,8 +140,35 @@ python db/connect.py
 
 ## 📖 文档
 
-- [教学大纲](教学大纲.md)
-- [教学计划](教学计划.md)
+- [教学大纲](docs/教学大纲.md)
+- [教学大纲升级版](docs/教学大纲升级版.md)
+- [教学计划](docs/教学计划.md)
+- [教学计划升级版](docs/教学计划升级版.md)
+- [实训基本纲要](docs/实训基本纲要.md)
+- [AGENTS.md](AGENTS.md) - AI 开发指南
+- [CODEBUDDY.md](CODEBUDDY.md) - 项目开发指南
+
+## 🚀 快速体验
+
+### 测试后端 API
+
+```bash
+# 启动 API 服务
+uvicorn api.main:app --reload
+
+# 访问 API 文档
+http://localhost:8000/docs
+```
+
+### 测试前端应用
+
+```bash
+# 启动 Gradio 应用
+python app.py
+
+# 访问前端界面
+http://localhost:7860
+```
 
 ## 📝 License
 

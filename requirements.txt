@@ -12,12 +12,18 @@ langchain==0.3.13
 langchain-core==0.3.28
 langchain-community==0.3.13
 langgraph==0.2.60
-langgraph-checkpoint-postgres>=2.0.0
+langchain-checkpoint-postgres>=2.0.0
 langchain-openai==0.2.14
 
 # 向量库
 chromadb==0.5.23
 sentence-transformers==3.3.1
+
+# 网络搜索
+duckduckgo-search
+
+# Gradio
+gradio==6.5.1
 
 # 工具
 python-dotenv==1.0.1
@@ -26,3 +32,6 @@ pydantic==2.10.4
 # 文档处理
 pypdf==5.1.0
 unstructured==0.18.31
+
+# 其他
+tiktoken>=0.5.0

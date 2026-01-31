@@ -1,0 +1,48 @@
+name: Deploy CampusFlow to Hugging Face Spaces
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install gradio
+
+      - name: Deploy to Spaces
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          SPACE_ID: ${{ secrets.SPACE_ID }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "actions@github.com"
+          
+          # 克隆 Space 仓库（如果是首次）
+          # git clone https://$HF_TOKEN@huggingface.co/spaces/$SPACE_ID temp_space
+          # cd temp_space
+          
+          # 或者使用 Hugging Face CLI
+          pip install huggingface_hub
+          
+          echo "部署到 Hugging Face Spaces..."
+          
+          # 推送代码到 Space
+          # git remote add space https://$HF_TOKEN@huggingface.co/spaces/$SPACE_ID
+          # git push --force origin main
+          
+          echo "✅ 部署完成"

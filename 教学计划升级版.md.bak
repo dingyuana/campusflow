@@ -1,0 +1,719 @@
+# 《大模型多智能体系统：智慧校园全栈实战》教学计划
+
+核心理念：以“智慧校园”为业务载体，系统性地实践 LangGraph 的13项核心能力。
+
+实训大纲（按天规划，深度融合 LangGraph 13 项能力）
+
+前置准备（0.5天）
+*   融入点：环境配置中明确安装 langgraph, langchain, gradio 等核心库。
+---
+
+### Day 0：项目启动与工程化初探（前置准备）
+
+#### 一、前期知识（课前预习，1h）
+
+**参考资料**：
+- `docs/工程规范/项目结构规范.md` - 目录结构设计标准
+- `docs/部署/Docker基础.md` - 容器化入门
+
+1. **多智能体系统（MAS）核心设计模式**：分工协作（Division of Labor）、主从编排（Master-Slave）、动态路由（Dynamic Routing）；
+2. **分布式状态管理核心问题**：数据一致性（Consistency）、状态丢失（State Loss）、多端同步（Multi-device Sync）；
+3. **工程化开发规范**：Git Flow 工作流（Master/Dev/Feature/Release）、Conventional Commits 规范、前后端分离架构。
+
+#### 二、实验目标
+
+1. 掌握智慧校园项目的标准目录结构（`api/`/`agents/`/`db/`/`utils/`/`frontend/`）；
+2. 完成云端开发环境初始化（Supabase 云数据库 + GitHub 仓库关联）；
+3. 实现容器化开发环境（Docker），解决"在我电脑上能跑"的环境不一致问题。
+
+#### 三、难点重点
+
+- **重点**：Git Flow 分支策略、Supabase 连接配置、Docker 卷挂载（Volume）持久化；
+- **难点**：环境变量安全管理（`.env`不提交到 Git）、多平台 Docker 镜像构建（x86/ARM）、云端数据库权限配置（RLS 行级安全）。
+
+#### 四、知识基础
+
+- **必备**：Git 基础（add/commit/push/branch）、Python 虚拟环境（venv）、基础 SQL；
+- **可选**：Docker 基础概念（镜像/容器/仓库）、Linux 基础命令。
+
+#### 五、实验步骤（8h，含 2h 理论讲解）
+
+**阶段 1：理论讲解（2h）**
+
+1. **MAS 架构模式**：对比单体 Agent vs 多 Agent 协作，智慧校园场景下的角色划分（咨询助手、办理助手、审核员）（40min）；
+2. **状态管理挑战**：为什么需要 PostgreSQL（Supabase）而非 SQLite（多实例共享状态）（30min）；
+3. **Git Flow 实战**：主干保护、Feature 分支命名规范（`feature/day0-init`）、PR 审查流程（30min）；
+4. **Docker 化价值**：环境一致性、快速回滚、云原生部署基础（20min）。
+
+**阶段 2：实操落地（6h）**
+
+**步骤 1：项目初始化与 Git 配置（1.5h）**
+
+1. 基于模板仓库创建项目（或使用 `cookiecutter`）：
+   ```bash
+   mkdir campus-assistant && cd campus-assistant
+   git init
+   git checkout -b dev  # 创建开发分支
+   git checkout -b feature/day0-init  # 特性分支
+   ```
+
+2. 设计标准目录结构：
+   ```
+   campus-assistant/
+   ├── api/               # FastAPI 接口层
+   ├── agents/            # 智能体核心逻辑
+   ├── db/                # 数据库模型与迁移
+   ├── utils/             # 工具函数
+   ├── frontend/          # Gradio 前端（预留）
+   ├── docker/            # Docker 配置
+   ├── docs/              # 文档
+   ├── .env.example       # 环境变量模板
+   └── docker-compose.yml # 编排文件
+   ```
+
+3. 配置 `.gitignore`（Python/Docker/IDE）：
+   ```gitignore
+   .venv/
+   __pycache__/
+   .env
+   db/chroma_db/  # 本地向量库不提交
+   *.sqlite3
+   ```
+
+**步骤 2：Python 虚拟环境与依赖（1h）**
+
+1. 强制使用虚拟环境（避免依赖地狱）：
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # Windows: .venv\Scripts\activate
+   
+   # 安装基础依赖
+   pip install langgraph langchain-openai python-dotenv psycopg2-binary supabase
+   pip freeze > requirements.txt
+   ```
+
+2. 创建 `pyproject.toml` 现代化配置（可选，推荐）；
+3. 编写 `README.md`（项目介绍、启动步骤、环境变量说明）。
+
+**步骤 3：云端环境初始化（Supabase）（1.5h）**
+
+1. **创建 Supabase 项目**：
+   - 访问 supabase.com，新建 Project（项目名称：`campus-assistant`）；
+   - 保存 `Project URL` 和 `anon/public` 密钥（用于 Python 连接）。
+
+2. **数据库初始化**：
+   ```sql
+   -- Supabase SQL Editor 中执行
+   CREATE TABLE student_profiles (
+       id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+       student_id VARCHAR(20) UNIQUE NOT NULL,
+       name VARCHAR(50),
+       major VARCHAR(100),
+       enrollment_date TIMESTAMP DEFAULT NOW(),
+       metadata JSONB
+   );
+   
+   -- 启用 RLS（行级安全），后续配合认证使用
+   ALTER TABLE student_profiles ENABLE ROW LEVEL SECURITY;
+   ```
+
+3. **Python 连接测试**（`utils/db_test.py`）：
+   ```python
+   from supabase import create_client
+   import os
+   from dotenv import load_dotenv
+   
+   load_dotenv()
+   supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
+   
+   # 测试插入
+   data = supabase.table("student_profiles").insert({
+       "student_id": "2024001",
+       "name": "张三",
+       "major": "计算机科学"
+   }).execute()
+   print("插入成功:", data)
+   
+   # 测试查询
+   result = supabase.table("student_profiles").select("*").eq("student_id", "2024001").execute()
+   print("查询结果:", result.data)
+   ```
+
+**步骤 4：Docker 化部署配置（1.5h）**
+
+1. 编写 `Dockerfile`（多阶段构建，减小镜像体积）：
+   ```dockerfile
+   # 阶段1：构建依赖
+   FROM python:3.11-slim as builder
+   WORKDIR /app
+   COPY requirements.txt .
+   RUN pip install --user --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+   
+   # 阶段2：运行环境
+   FROM python:3.11-slim
+   WORKDIR /app
+   
+   # 复制依赖
+   COPY --from=builder /root/.local /root/.local
+   ENV PATH=/root/.local/bin:$PATH
+   
+   # 复制代码
+   COPY . .
+   
+   # 非 root 用户运行（安全）
+   RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+   USER appuser
+   
+   EXPOSE 8000
+   CMD ["python", "api/main.py"]
+   ```
+
+2. 编写 `docker-compose.yml`（本地开发栈）：
+   ```yaml
+   version: '3.8'
+   services:
+     app:
+       build: .
+       ports:
+         - "8000:8000"
+       env_file: .env
+       volumes:
+         - ./:/app  # 代码热重载
+         - /app/.venv  # 排除虚拟环境
+       depends_on:
+         - redis
+         - chroma
+         
+     redis:  # 缓存与会话
+       image: redis:alpine
+       ports:
+         - "6379:6379"
+         
+     chroma:  # 本地向量库（可选，也可用云端）
+       image: chromadb/chroma:latest
+       ports:
+         - "8001:8000"
+       volumes:
+         - chroma_data:/chroma/chroma
+   
+   volumes:
+     chroma_data:
+   ```
+
+3. 本地测试 Docker 构建：
+   ```bash
+   docker-compose up --build
+   # 测试数据库连接是否通过容器网络正常
+   ```
+
+**步骤 5：代码提交与 PR（0.5h）**
+
+1. 提交初始化代码：
+   ```bash
+   git add .
+   git commit -m "chore: 项目初始化，配置Docker与Supabase连接"
+   git push origin feature/day0-init
+   ```
+2. 创建 PR（`dev` ← `feature/day0-init`），要求审查 `Dockerfile` 和 `.env.example` 是否安全（无敏感信息泄露）；
+3. **结课检查点**：提交 Supabase 连接测试截图（数据插入成功）和 Docker 运行日志。
+
+#### 六、考核方法（量化评分，10 分）
+
+| 考核项 | 分值 | 评分标准 |
+| --- | --- | --- |
+| 目录结构 | 2 分 | 符合分层架构规范，有明确的 api/agents/db 分离 |
+| Git 规范 | 2 分 | 使用 Feature 分支，Commit 符合 Conventional Commits |
+| Supabase 连接 | 3 分 | 成功连接云端数据库，完成增删改查测试，配置 RLS |
+| Docker 化 | 2 分 | Dockerfile 多阶段构建，docker-compose 可一键启动 |
+| 加分项 | 1 分 | 配置 GitHub Actions 自动构建 Docker 镜像并推送到仓库 |
+
+---
+
+### Day 3：复杂关系处理（知识图谱 Neo4j）
+
+#### 一、前期知识（课前预习，1h）
+
+**参考资料**：
+- `docs/图数据库/图建模指南.md` - 校园场景实体关系设计
+- `docs/安全/Cypher注入防护.md` - 查询安全规范
+
+1. 图数据库核心概念（节点 Node / 关系 Relationship / 属性 Property），与关系型数据库的范式差异；
+2. 智慧校园图建模原则（实体抽象：学生-教师-实验室-课程-院系；关系定义：隶属 TEACHES_IN、选修 ENROLLS、入驻 BELONGS_TO）；
+3. Text-to-Cypher 原理（NL→Cypher 的 Prompt 工程）、核心风险（Cypher 注入、死循环查询、性能爆炸）。
+
+#### 二、实验目标
+
+1. 掌握 Neo4j 图建模方法（校园场景：多跳关系如"查询计算机学院张老师的实验室里的学生"）；
+2. 实现安全的 Text-to-Cypher 系统（带语法校验与权限限制）；
+3. 完成 RAG（Chroma）与知识图谱（Neo4j）的混合检索（非结构化+结构化融合）。
+
+#### 三、难点重点
+
+- **重点**：图 Schema 设计（避免关系爆炸）、Cypher 语句生成与验证、多跳查询优化；
+- **难点**：Text-to-Cypher 的准确性（Schema 对齐）、防止破坏性操作（DELETE/DROP 过滤）、图与向量库的联邦查询（Federated Query）。
+
+#### 四、知识基础
+
+- **必备**：Cypher 基础语法（MATCH/CREATE/WHERE/RETURN）、Python 字符串操作；
+- **可选**：图论基础（度、路径、连通性）、Neo4j APOC 扩展库。
+
+#### 五、实验步骤（8h，含 2h 理论讲解）
+
+**阶段 1：理论讲解（2h）**
+
+1. **图数据库选型**：Neo4j vs 关系型数据库在关系查询上的性能对比（多跳查询的时间复杂度）（30min）；
+2. **校园场景建模**：实体识别（学生、教师、实验室、课程、宿舍、院系）、关系设计（一对一/一对多/多对多）（40min）；
+3. **Text-to-Cypher 工程**：Prompt 模板设计（含 Schema 描述）、Few-shot 示例、错误重试机制（30min）；
+4. **安全防护**：语句白名单（只读权限）、正则过滤（禁止 DROP/DELETE/MERGE 危险操作）、执行超时限制（20min）。
+
+**阶段 2：实操落地（6h）**
+
+**步骤 1：Neo4j 环境部署（1h）**
+
+1. **云端部署（推荐）**：注册 Neo4j Aura（免费云实例），获取连接 URI 和密码；
+   **或本地 Docker**：
+   ```yaml
+   # 添加到 docker-compose.yml
+   neo4j:
+     image: neo4j:latest
+     ports:
+       - "7474:7474"  # Web UI
+       - "7687:7687"  # Bolt 协议
+     environment:
+       - NEO4J_AUTH=neo4j/password123
+     volumes:
+       - neo4j_data:/data
+   ```
+
+2. 安装 Python 驱动：`pip install neo4j langchain-community`；
+3. 连接测试（`utils/neo4j_test.py`）：
+   ```python
+   from neo4j import GraphDatabase
+   driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "password123"))
+   with driver.session() as session:
+       result = session.run("RETURN 'Hello Neo4j' AS message")
+       print(result.single()["message"])
+   ```
+
+**步骤 2：智慧校园图建模与数据入库（1.5h）**
+
+1. 设计图 Schema（`db/neo4j_schema.cypher`）：
+   ```cypher
+   // 创建约束（唯一性）
+   CREATE CONSTRAINT student_id IF NOT EXISTS
+   FOR (s:Student) REQUIRE s.student_id IS UNIQUE;
+   
+   // 导入仿真数据（教师-实验室-学生关系）
+   CREATE (t:Teacher {name: "张教授", dept: "计算机学院", title: "教授"})
+   CREATE (l:Lab {name: "人工智能实验室", building: "科技楼305"})
+   CREATE (s1:Student {name: "李四", student_id: "2024001", major: "计算机科学"})
+   CREATE (s2:Student {name: "王五", student_id: "2024002", major: "软件工程"})
+   
+   // 建立关系
+   CREATE (t)-[:SUPERVISES]->(l)
+   CREATE (s1)-[:BELONGS_TO]->(l)
+   CREATE (s2)-[:BELONGS_TO]->(l)
+   CREATE (t)-[:TEACHES {course: "机器学习"}]->(s1)
+   ```
+
+2. 编写 Python 数据导入脚本（批量导入 CSV）；
+3. **可视化验证**：打开 Neo4j Browser（:7474），执行 `MATCH (n) RETURN n` 查看关系图。
+
+**步骤 3：基础查询与多跳关系（1h）**
+
+1. 实现常用查询函数（`utils/graph_queries.py`）：
+   ```python
+   def get_lab_students(teacher_name):
+       """查询某教师实验室下的所有学生（2跳查询）"""
+       query = """
+       MATCH (t:Teacher {name: $teacher_name})-[:SUPERVISES]->(l:Lab)<-[:BELONGS_TO]-(s:Student)
+       RETURN s.name AS student, s.major AS major, l.name AS lab
+       """
+       with driver.session() as session:
+           return list(session.run(query, teacher_name=teacher_name))
+   
+   def get_classmates(student_id):
+       """查询同实验室同学（协同过滤基础）"""
+       query = """
+       MATCH (s:Student {student_id: $id})-[:BELONGS_TO]->(l:Lab)<-[:BELONGS_TO]-(classmate:Student)
+       WHERE s <> classmate
+       RETURN classmate.name, classmate.major
+       """
+       return list(session.run(query, id=student_id))
+   ```
+
+2. 测试复杂多跳："查找教过计算机学院学生的所有教授及其实验室"（3跳以上）。
+
+**步骤 4：Text-to-Cypher 安全实现（1.5h）**
+
+1. 基于 LangChain 搭建 NL→Cypher 链（`agents/graph_agent.py`）：
+   ```python
+   from langchain.chains import GraphCypherQAChain
+   from langchain_community.graphs import Neo4jGraph
+   
+   graph = Neo4jGraph(url="bolt://localhost:7687", username="neo4j", password="password123")
+   
+   # 增强 Schema 描述（提高准确性）
+   graph.refresh_schema()
+   enhanced_schema = graph.schema + """
+   注意：
+   1. Teacher 和 Student 通过 TEACHES 关系连接
+   2. Lab 和 Student 通过 BELONGS_TO 关系连接
+   3. 所有查询必须使用参数化查询（$param）
+   """
+   
+   chain = GraphCypherQAChain.from_llm(
+       llm=ChatOpenAI(temperature=0),
+       graph=graph,
+       verbose=True,
+       cypher_prompt=CYPHER_GENERATION_PROMPT,  # 自定义 Prompt 含 Few-shot
+       return_intermediate_steps=True,  # 返回 Cypher 语句用于审计
+       top_k=10,  # 限制返回数量
+       allow_dangerous_requests=False  # 基础防护
+   )
+   ```
+
+2. **安全防护层**（必须实现）：
+   ```python
+   import re
+   
+   DANGEROUS_KEYWORDS = ['DROP', 'DELETE', 'REMOVE', 'SET', 'CREATE', 'MERGE', 'CALL']
+   
+   def validate_cypher(query: str) -> bool:
+       """Cypher 语句安全检查"""
+       upper_query = query.upper()
+       # 检查危险关键字（在白名单模式下，只允许 MATCH/RETURN/WITH/LIMIT/ORDER BY）
+       if any(kw in upper_query for kw in DANGEROUS_KEYWORDS):
+           return False
+       # 必须包含 RETURN（确保是查询而非修改）
+       if 'RETURN' not in upper_query:
+           return False
+       return True
+   
+   # 包装执行函数
+   def safe_query(nl_query: str):
+       cypher = llm_generate_cypher(nl_query)  # 生成
+       if not validate_cypher(cypher):
+           raise ValueError("检测到危险操作，已拦截")
+       return execute_cypher(cypher)
+   ```
+
+3. 添加查询超时限制（防止死循环）；
+4. 测试边界："删除所有学生" → 应被拦截并返回安全提示。
+
+**步骤 5：RAG + 图混合检索（0.5h）**
+
+1. 实现联合查询逻辑：
+   ```python
+   def hybrid_retrieval(query: str):
+       # 1. 向量检索（非结构化数据：如学生手册内容）
+       vector_results = chroma_db.similarity_search(query, k=3)
+       
+       # 2. 图检索（结构化关系：如"张三的室友是谁"）
+       # 先用 LLM 判断是否需要图查询
+       if needs_graph(query):  # 包含"谁、关系、学院、导师"等词
+           graph_result = text_to_cypher(query)
+       else:
+           graph_result = None
+           
+       # 3. 融合上下文生成回答
+       context = format_vector_results(vector_results) + format_graph_result(graph_result)
+       return llm_generate_answer(query, context)
+   ```
+
+**步骤 6：代码提交与 PR（0.5h）**
+
+1. 提交代码：`git commit -m "feat: 实现Neo4j知识图谱与Text-to-Cypher查询"`；
+2. 推送分支：`git push origin feature/day3-neo4j`；
+3. 创建 PR，附 Neo4j Browser 截图（可视化关系图）和 Text-to-Cypher 测试用例表（含安全防护验证）。
+
+#### 六、考核方法（量化评分，10 分）
+
+| 考核项 | 分值 | 评分标准 |
+| --- | --- | --- |
+| 图建模 | 2 分 | Schema 设计合理，实体关系清晰，无冗余，含多跳关系 |
+| 数据入库 | 2 分 | 成功导入仿真数据，可在 Neo4j Browser 中可视化查看 |
+| 基础查询 | 2 分 | 实现至少 3 个多跳查询函数（如实验室-教师-学生关联） |
+| Text-to-Cypher | 3 分 | 自然语言转 Cypher 准确率>80%，有错误重试机制 |
+| 安全防护 | 1 分 | 实现危险语句过滤（禁止 DROP/DELETE），只读权限控制 |
+
+---
+
+### Day 10：CI/CD 自动化与部署（DevOps 实战）
+
+#### 一、前期知识（课前预习，1h）
+
+**参考资料**：
+- `docs/运维/GitHubActions.md` - 工作流配置
+- `docs/运维/云部署对比.md` - Vercel vs HuggingFace Spaces
+
+1. 持续集成/持续部署（CI/CD）核心原则：自动化测试、制品管理、蓝绿部署；
+2. GitHub Actions 工作流语法（on/push/pull_request, jobs, steps, actions/checkout）；
+3. 云平台部署选项：Hugging Face Spaces（Gradio 原生支持）、Vercel（Serverless）、阿里云函数计算。
+
+#### 二、实验目标
+
+1. 配置 GitHub Actions 实现自动化测试与 Docker 镜像构建；
+2. 将 Gradio 应用部署至 Hugging Face Spaces（公开访问）；
+3. 实现自动化的"提交代码→自动测试→构建镜像→部署上线"流水线。
+
+#### 三、难点重点
+
+- **重点**：GitHub Actions YAML 编写、Secrets 密钥管理、Gradio 的 `launch()` 参数配置（Server 模式）；
+- **难点**：自动化测试（单元测试覆盖 Agent 节点）、多环境配置（Dev/Staging/Prod）、回滚机制（Rollback）。
+
+#### 四、知识基础
+
+- **必备**：Git 远程操作、YAML 语法、Linux 基础命令；
+- **可选**：Docker Hub 使用、SSH 密钥配置。
+
+#### 五、实验步骤（8h，含 2h 理论讲解）
+
+**阶段 1：理论讲解（2h）**
+
+1. **CI/CD 流程设计**：Git 提交触发 → 代码检查（Lint）→ 单元测试 → 构建镜像 → 部署（30min）；
+2. **GitHub Actions 核心概念**：Workflow、Job（并行/串行）、Step、Action（复用社区脚本）（30min）；
+3. **云平台选型**：
+   - Hugging Face Spaces：零配置部署 Gradio，适合 Demo（20min）；
+   - Vercel：适合 Next.js 前端，Serverless 函数（20min）；
+   - 自建 K8s：适合生产级，但超出实训范围（提及即可）（20min）。
+
+**阶段 2：实操落地（6h）**
+
+**步骤 1：自动化测试框架（1.5h）**
+
+1. 编写单元测试（`tests/` 目录）：
+   ```python
+   # tests/test_agents.py
+   import pytest
+   from agents.campus_agent import create_campus_agent
+   
+   def test_agent_basic_response():
+       agent = create_campus_agent()
+       result = agent.invoke({"messages": [("user", "你好")]})
+       assert "新生" in result["messages"][-1].content or "帮助" in result["messages"][-1].content
+   
+   def test_tool_calling():
+       # 测试工具调用是否正确触发
+       result = agent.invoke({"messages": [("user", "食堂在哪里")]})
+       # 验证是否使用了 campus_map 工具（通过检查中间步骤）
+       assert any("campus_map" in str(step) for step in result.get("intermediate_steps", []))
+   ```
+
+2. 配置 `pytest` 与覆盖率检查：`pip install pytest pytest-asyncio`；
+3. 本地测试通过：`pytest tests/ -v --cov=agents`。
+
+**步骤 2：GitHub Actions 工作流（1.5h）**
+
+1. 创建 `.github/workflows/ci-cd.yml`：
+   ```yaml
+   name: CI/CD Pipeline
+   
+   on:
+     push:
+       branches: [ main, dev ]
+     pull_request:
+       branches: [ main ]
+   
+   jobs:
+     test:
+       runs-on: ubuntu-latest
+       steps:
+         - uses: actions/checkout@v4
+         
+         - name: Set up Python
+           uses: actions/setup-python@v5
+           with:
+             python-version: '3.11'
+             
+         - name: Install dependencies
+           run: |
+             pip install -r requirements.txt
+             pip install pytest pytest-cov
+             
+         - name: Run tests
+           run: pytest tests/ --cov=agents --cov-report=xml
+           
+         - name: Upload coverage
+           uses: codecov/codecov-action@v3
+           with:
+             file: ./coverage.xml
+   
+     build:
+       needs: test  # 测试通过后构建
+       runs-on: ubuntu-latest
+       if: github.ref == 'refs/heads/main'
+       steps:
+         - uses: actions/checkout@v4
+         
+         - name: Build Docker Image
+           run: |
+             docker build -t campus-assistant:${{ github.sha }} .
+             docker tag campus-assistant:${{ github.sha }} campus-assistant:latest
+             
+         - name: Push to Docker Hub（可选）
+           uses: docker/login-action@v3
+           with:
+             username: ${{ secrets.DOCKER_USERNAME }}
+             password: ${{ secrets.DOCKER_PASSWORD }}
+           # run: docker push ...
+   ```
+
+2. 配置 Secrets（GitHub Repo → Settings → Secrets）：`OPENAI_API_KEY`、`SUPABASE_URL` 等；
+3. 测试触发：提交代码到 `dev` 分支，观察 Actions 运行状态。
+
+**步骤 3：Hugging Face Spaces 部署（2h）**
+
+1. **创建 Space**：
+   - 访问 huggingface.co/spaces，新建 Space（Gradio SDK，Public）；
+   - 记录 Space 名称（如 `username/campus-assistant`）。
+
+2. **配置自动部署**（通过 GitHub Actions）：
+   ```yaml
+   # 在 ci-cd.yml 添加 deploy job
+   deploy:
+     needs: build
+     runs-on: ubuntu-latest
+     steps:
+       - uses: actions/checkout@v4
+         with:
+           fetch-depth: 0  # 完整历史
+           
+       - name: Push to Hugging Face
+         run: |
+           git config --global user.email "ci@example.com"
+           git config --global user.name "CI Bot"
+           git remote add space https://username:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/username/campus-assistant
+           git push space main -f
+   ```
+
+3. **应用适配**（`app.py` 入口文件调整）：
+   ```python
+   import gradio as gr
+   import os
+   from agents import create_supervisor_agent
+   
+   # Hugging Face Spaces 环境变量读取
+   os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")  # 在 Space 设置中配置
+   os.environ["SUPABASE_URL"] = os.getenv("SUPABASE_URL")
+   
+   agent = create_supervisor_agent()
+   
+   def respond(message, history):
+       # 流式响应适配 Hugging Face
+       partial_message = ""
+       for chunk in agent.stream({"messages": [("user", message)]}):
+           if isinstance(chunk, dict) and "agent" in chunk:
+               partial_message += chunk["agent"]["messages"][-1].content
+               yield partial_message
+   
+   demo = gr.ChatInterface(
+       respond,
+       title="🎓 智慧校园新生报到助手",
+       description="支持报到咨询、宿舍查询、学业指导等服务",
+       examples=["如何办理报到手续？", "计算机学院导师有哪些？", "今天天气如何？"]
+   )
+   
+   # 关键：HF Spaces 需要 server_name="0.0.0.0"
+   demo.launch(server_name="0.0.0.0", server_port=7860)
+   ```
+
+4. 配置 `requirements.txt` 确保包含所有依赖；
+5. 首次手动部署验证：`git push` 到 Hugging Face 仓库，查看构建日志。
+
+**步骤 4：多环境配置与健康检查（0.5h）**
+
+1. 区分环境配置（`config/` 目录）：
+   ```python
+   # config/settings.py
+   import os
+   
+   ENV = os.getenv("APP_ENV", "development")
+   
+   if ENV == "production":
+       DB_URL = os.getenv("SUPABASE_URL")
+       LLM_MODEL = "gpt-4o"
+       DEBUG = False
+   else:
+       DB_URL = "sqlite:///local.db"
+       LLM_MODEL = "gpt-4o-mini"
+       DEBUG = True
+   ```
+
+2. 添加健康检查端点（`api/health.py`）：
+   ```python
+   from fastapi import FastAPI
+   import psutil
+   
+   app = FastAPI()
+   
+   @app.get("/health")
+   def health_check():
+       return {
+           "status": "healthy",
+           "cpu": psutil.cpu_percent(),
+           "memory": psutil.virtual_memory().percent,
+           "db_connected": check_db_connection()
+       }
+   ```
+
+**步骤 5：最终提交与验证（0.5h）**
+
+1. 提交所有配置：`git commit -m "ci: 配置GitHub Actions与HF Spaces自动部署"`；
+2. 创建 PR 到 `main` 分支，合并后观察自动部署；
+3. **验收标准**：访问 `https://huggingface.co/spaces/{username}/campus-assistant` 可正常对话；
+4. 提交部署链接与 CI/CD 流程图。
+
+#### 六、考核方法（量化评分，10 分）
+
+| 考核项 | 分值 | 评分标准 |
+| --- | --- | --- |
+| 自动化测试 | 2 分 | 编写了至少 3 个单元测试，GitHub Actions 自动运行通过 |
+| CI 配置 | 2 分 | GitHub Actions 工作流配置正确，含测试与构建阶段 |
+| HuggingFace 部署 | 3 分 | 成功部署到 Spaces，公网可访问，基础功能正常 |
+| 多环境管理 | 2 分 | 区分 Dev/Prod 环境，敏感信息通过 Secrets 管理 |
+| 加分项 | 1 分 | 实现自动回滚（失败时恢复上一版本）或部署通知（Webhook） |
+
+---
+
+## 📅 完整 15 天教学路线图
+
+```mermaid
+gantt
+    title 智慧校园新生报到助手 - 完整实训路线图
+    dateFormat  YYYY-MM-DD
+    
+    section 基础准备
+    Day0 工程化启动    :done, d0, 2026-02-01, 1d
+    Day1 ReAct Agent   :done, d1, after d0, 1d
+    Day2 RAG向量库     :done, d2, after d1, 1d
+    
+    section 数据层增强
+    Day3 知识图谱Neo4j :done, d3, after d2, 1d
+    Day4 StateGraph    :done, d4, after d3, 1d
+    
+    section 架构核心
+    Day5 中间件        :done, d5, after d4, 1d
+    Day6 HITL          :done, d6, after d5, 1d
+    Day7 记忆系统      :done, d7, after d6, 1d
+    Day8 上下文工程    :done, d8, after d7, 1d
+    Day9 MCP Server    :done, d9, after d8, 1d
+    
+    section DevOps
+    Day10 CI/CD部署    :crit, d10, after d9, 1d
+    
+    section 高级特性
+    Day11 Supervisor   :done, d11, after d10, 1d
+    Day12 并行计算     :done, d12, after d11, 1d
+    Day13 网络搜索     :done, d13, after d12, 1d
+    Day14 Deep Agents  :done, d14, after d13, 1d
+    
+    section 产品发布
+    Day15 Gradio APP   :crit, d15, after d14, 1d
+```
+
+**教学要点总结**：
+1. **Day 0** 解决环境痛点（Docker+Supabase），确保所有学生起点一致；
+2. **Day 3** 引入知识图谱处理复杂关系（如导师-实验室-学生网络），弥补向量库结构化不足；
+3. **Day 10** 提前部署 CI/CD，确保后续高级特性（Supervisor/Deep Agents）可自动集成测试，形成"开发-测试-部署"闭环；
+4. 保持**项目连贯性**：每一天的代码都基于前一天，最终在第15天形成可演示的生产级产品。
