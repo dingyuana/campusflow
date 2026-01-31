@@ -3,16 +3,23 @@ FastAPI 主入口
 提供 RESTful API 服务
 """
 
+import sys
+import os
+
+# 添加项目根目录到路径
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api.student_routes import router as student_router
+from api.agent_routes import router as agent_router
 
 
 # 创建 FastAPI 应用
 app = FastAPI(
     title="CampusFlow API",
-    description="智慧校园系统 API 接口",
-    version="1.0.0"
+    description="智慧校园系统 API 接口 - 集成多智能体服务",
+    version="2.0.0"
 )
 
 
@@ -28,6 +35,7 @@ app.add_middleware(
 
 # 注册路由
 app.include_router(student_router)
+app.include_router(agent_router)
 
 
 @app.get("/")
